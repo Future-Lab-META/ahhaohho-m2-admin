@@ -707,7 +707,7 @@ function projFilterHtml(q, list, nicks) {
       </div>
       <div class="frow"><span class="flabel">보기</span>
         ${chk('fAkk', '서포터즈 게시물만 보기', '작성자가 서포터즈(아크크 크루)인 글. 올라간 곳은 상관없음', "if(!this.checked)S.fCohort='';")}
-        ${S.fAkk ? `<select class="input" style="min-width:110px" onchange="S.fCohort=this.value;render()">${opt('', '전체 기수', S.fCohort)}${cohorts.map(n => opt(String(n), n + '기', S.fCohort)).join('')}</select>` : ''}
+        ${S.fAkk ? `<select class="input" style="min-width:110px" onchange="S.fCohort=this.value;render()">${opt('', '전체', S.fCohort)}${cohorts.map(n => opt(String(n), '아크크 ' + n + '기', S.fCohort)).join('')}</select>` : ''}
         ${chk('fExClass', '클래스 게시물 제외', '학교·기관 같은 일반 클래스에 올라간 글을 뺍니다. 아크크 같은 시스템 클래스 글은 남아요', "if(this.checked&&S.fClass&&!(" + "(POSTS.flatMap(x=>x.scope).find(c=>c.name===S.fClass)||{}).system))S.fClass='';")}
         ${chk('fFeat', '피처드만 보기', '')}
       </div>
