@@ -372,8 +372,8 @@ const POSTS = [
   { id: 'g6', type: 'common', challenge: null, author: { nick: '민트초코칩', crew: null }, scope: [{ name: '한빛초 4학년 1반', system: false, akk: false }], curation: null, postedAt: '2026-11-07 15:45',
     text: '오늘 만든 거',
     media: [ { type: 'image', src: A+'p1.jpg' } ],
-    reactions: 1, featured: false, hidden: true, hiddenReason: '부적절한 콘텐츠', hiddenAt: '2026-11-07 17:00', status: 'normal',
-    reports: [ { reporter: '해바라기씨', reason: 'offensive', detail: '', at: '2026-11-07 16:30' } ], reportStatus: 'dismissed',
+    reactions: 1, featured: false, hidden: true, hiddenReason: '욕설이나 비방', hiddenAt: '2026-11-07 17:00', status: 'normal',
+    reports: [ { reporter: '해바라기씨', reason: 'offensive', detail: '', at: '2026-11-07 16:30' } ], reportStatus: 'hidden',
     comments: [] },
 ];
 POSTS.push(
@@ -386,7 +386,8 @@ POSTS.push(
     reports: [ { reporter: '해바라기씨', reason: 'privacy', detail: '다른 친구 얼굴이 나와요', at: '2026-11-05 14:02' } ], comments: [] },
 );
 // 이미 처리된 예시
-POSTS[5].reportStatusOverride = 'dismissed';
+POSTS[5].reportStatusOverride = 'hidden';   // 신고 받고 숨김 처리한 예시
+POSTS[2].reportStatusOverride = 'dismissed'; // 신고를 확인했지만 문제없어 기각한 예시(게시물은 그대로 보임)
 
 const BLOCKS = [
   { by: '해바라기씨', target: '민트초코칩', at: '2026-11-11 17:21', from: '댓글', postId: 'g2', commentId: 'c3' },
