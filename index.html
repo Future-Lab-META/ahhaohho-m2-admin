@@ -959,7 +959,7 @@ function reasonSelect() {
 function applyReason() {
   const k = $('reason').value; $('guide').value = GUIDE_TPL[k][DLG_KIND === 'comment' ? 'comment' : 'post']; dlgSync();
 }
-const REPORTER_TPL = { post: '신고해 주신 게시물을 확인하고 삭제했어요. 알려 줘서 고마워요!', comment: '신고해 주신 댓글을 확인하고 삭제했어요. 알려 줘서 고마워요!', hide: '신고해 주신 게시물을 확인하고 다른 친구들에게 보이지 않게 했어요. 알려 줘서 고마워요!' };
+const REPORTER_TPL = { post: '신고해 주신 게시물을 확인하고 삭제했어요. 알려 줘서 고마워요! 모두가 즐겁게 창작할 수 있는 아하오호가 되도록 더 노력할게요.', comment: '신고해 주신 댓글을 확인하고 삭제했어요. 알려 줘서 고마워요! 모두가 즐겁게 창작할 수 있는 아하오호가 되도록 더 노력할게요.', hide: '신고해 주신 게시물을 확인하고 다른 친구들에게 보이지 않게 했어요. 알려 줘서 고마워요! 모두가 즐겁게 창작할 수 있는 아하오호가 되도록 더 노력할게요.' };
 
 function openDelete(kind, postId, commentId) {
   DLG_KIND = kind;
@@ -991,7 +991,7 @@ function openDelete(kind, postId, commentId) {
           <div class="app-modal"><div class="app-modal-title" id="pvMsg"></div><div class="app-modal-body" id="pvGuide"></div>
           <div class="app-modal-btns"><span class="pri">그라운드룰 보러 가기</span></div></div></div>
         <div class="phone" id="pvReporter" style="${reports.length ? '' : 'opacity:.35'}"><div class="phone-cap">신고자 · 인앱 알림</div>
-          <div class="app-noti">🔔 ${reports.length ? '아하오호에서 메시지가 왔어요.' : '신고자가 없어 보내지 않아요'}</div>${reports.length ? `<div class="phone-cap" style="margin-top:6px">누르면 처리 결과 모달: ${kind === 'comment' ? `신고해 주신 댓글을 확인하고 삭제했어요. 신고한 댓글: "${esc(c.text.length > 5 ? c.text.slice(0, 5) + '...' : c.text)}" 알려 줘서 고마워요!` : REPORTER_TPL[kind]}</div>` : ''}</div>
+          <div class="app-noti">🔔 ${reports.length ? '아하오호에서 메시지가 왔어요.' : '신고자가 없어 보내지 않아요'}</div>${reports.length ? `<div class="phone-cap" style="margin-top:6px">누르면 처리 결과 모달: ${kind === 'comment' ? `신고해 주신 댓글을 확인하고 삭제했어요. 신고한 댓글: "${esc(c.text.length > 5 ? c.text.slice(0, 5) + '...' : c.text)}" 알려 줘서 고마워요! 모두가 즐겁게 창작할 수 있는 아하오호가 되도록 더 노력할게요.` : REPORTER_TPL[kind]}</div>` : ''}</div>
       </div>
     </div>
     <div class="dlg-foot"><button class="btn" onclick="closeDlg()">취소</button><button class="btn danger" id="okBtn" onclick="confirmDelete('${kind}','${postId}','${commentId || ''}')">삭제하기</button></div>`;
