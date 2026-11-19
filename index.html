@@ -451,20 +451,22 @@ function reportRows() {
 
 /* ───────────────────────── 사이드 메뉴 ───────────────────────── */
 function renderSnb() {
-  const items = [
-    ['static', '챌린지 관리'], ['static', '고정 데이터 관리'], ['static', '보상 관리'], ['static', '체험단 관리'],
-    ['nav', '프로젝트 관리', 'project', 'up'],
-    ['nav', '신고·차단 관리', 'reports', 'new'],
-    ['nav', '댓글 관리', 'comments', 'new'],
-    ['static', '사용자 관리'], ['static', '문의 관리'], ['static', '블랙리스트 관리'], ['static', '테스트 계정 관리'], ['static', '앱 설정 관리'], ['static', 'FLC 진입 팝업'], ['static', '네트워크 점검'],
+  const groups = [
+    ['콘텐츠', [['static', '챌린지 관리'], ['static', '고정 데이터 관리'], ['static', '보상 관리']]],
+    ['게시물·댓글', [['nav', '프로젝트 관리', 'project', 'up'], ['nav', '댓글 관리', 'comments', 'new'], ['nav', '신고·차단 관리', 'reports', 'new']]],
+    ['회원', [['static', '체험단 관리'], ['static', '문의 관리'], ['static', '블랙리스트 관리']]],
+    ['앱·시스템', [['static', '앱 설정 관리'], ['static', 'FLC 진입 팝업'], ['static', '네트워크 점검'], ['static', '사용자 관리'], ['static', '테스트 계정 관리']]],
   ];
   const pending = reportRows().filter(r => r.status === 'pending').length;
-  $('snb').innerHTML = items.map(([k, label, page, tag]) => {
+  const item = ([k, label, page, tag]) => {
     if (k === 'static') return `<div class="snb-item static">${label}</div>`;
     const t = tag === 'new' ? '<span class="tag new">NEW</span>' : '<span class="tag up">개선</span>';
     const c = page === 'reports' && pending ? `<span class="count red">${pending}</span>` : t;
     return `<div class="snb-item nav ${S.page === page ? 'active' : ''}" onclick="go('${page}')"><span>${label}</span>${c}</div>`;
-  }).join('');
+  };
+  $('snb').innerHTML = groups.map(([g, items], gi) =>
+    `<div class="snb-group" style="${gi ? 'margin-top:14px;padding-top:14px;border-top:1px solid var(--line2);' : ''}"><div style="font-size:12px;font-weight:700;color:rgba(5,5,5,0.45);padding:0 14px 6px">${g}</div>${items.map(item).join('')}</div>`
+  ).join('');
 }
 function go(page) { S.page = page; render(); window.scrollTo(0, 0); }
 
