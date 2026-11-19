@@ -900,7 +900,7 @@ function openHide(id) {
       <label class="opt-row"><input type="checkbox" id="optAuthor" checked onchange="dlgSync()"> 작성자에게 안내 보내기</label>
       <div id="authorBox">
         <div class="dlg-label" style="margin-top:8px"><span style="font-weight:600;font-size:12px;color:var(--muted)">제목 (기본 문구가 채워져 있어요. 사유에 맞게 고쳐 주세요)</span><span class="dlg-counter" id="cnt"></span></div>
-        <textarea id="msg" oninput="dlgSync()">${TPL.hide}</textarea>
+        <textarea id="msg" oninput="dlgSync()">${esc(titleFor('hide', p))}</textarea>
         <div class="dlg-label" style="margin-top:10px"><span style="font-weight:600;font-size:12px;color:var(--muted)">안내 (기본 문구가 채워져 있어요. 고치거나 비울 수 있어요. 비우면 제목만 보여요)</span><span class="dlg-counter" id="cnt2"></span></div>
         <textarea id="guide" oninput="dlgSync()">${GUIDE_TPL.abuse.post}</textarea>
       </div>
@@ -951,6 +951,14 @@ const GUIDE_TPL = {
              comment: '주소, 연락처 같은 개인정보는 나와 친구를 지키기 위해 아하오호에 올리거나 물어보지 않기로 해요.' },
   other: { post: '', comment: '' },
 };
+const kDate = s => { const [y, m, d] = String(s).split(' ')[0].split('-'); return `${+m}월 ${+d}일`; };
+const snip5 = t => (t.length > 5 ? t.slice(0, 5) + '...' : t);
+function titleFor(kind, p, c) {
+  if (kind === 'post') return `${kDate(p.postedAt)}에 ${TPL.post}`;
+  if (kind === 'hide') return `${kDate(p.postedAt)}에 ${TPL.hide}`;
+  const isReply = !p.comments.some(x => x.id === c.id);
+  return `${kDate(c.at)}에 남긴 "${snip5(c.text)}" ${isReply ? '답글' : '댓글'}을 운영자가 삭제했어요.`;
+}
 let DLG_KIND = 'post';
 function reasonSelect() {
   return `<div class="dlg-block"><div class="dlg-label">사유 <span class="dlg-counter">고르면 안내 문구가 바뀌어요</span></div>
@@ -978,7 +986,7 @@ function openDelete(kind, postId, commentId) {
       <label class="opt-row"><input type="checkbox" id="optAuthor" checked onchange="dlgSync()"> 작성자에게 안내 보내기</label>
       <div id="authorBox">
         <div class="dlg-label" style="margin-top:8px"><span style="font-weight:600;font-size:12px;color:var(--muted)">제목 (기본 문구가 채워져 있어요. 사유에 맞게 고쳐 주세요)</span><span class="dlg-counter" id="cnt"></span></div>
-        <textarea id="msg" oninput="dlgSync()">${TPL[kind]}</textarea>
+        <textarea id="msg" oninput="dlgSync()">${esc(titleFor(kind, p, c))}</textarea>
         <div class="dlg-label" style="margin-top:10px"><span style="font-weight:600;font-size:12px;color:var(--muted)">안내 (기본 문구가 채워져 있어요. 고치거나 비울 수 있어요. 비우면 제목만 보여요)</span><span class="dlg-counter" id="cnt2"></span></div>
         <textarea id="guide" oninput="dlgSync()">${GUIDE_TPL.abuse[kind === 'comment' ? 'comment' : 'post']}</textarea>
       </div>
