@@ -528,7 +528,12 @@ function renderReports() {
       }).join('')}</tbody>
     </table></div>` : `<div class="panel empty">조건에 맞는 신고가 없어요</div>`;
 
-  return head + stats + filters + table;
+  const slackNote = `
+    <div style="display:flex;align-items:center;gap:10px;margin:0 0 16px;padding:12px 16px;border-radius:10px;background:#F3F0FF;border:1px solid #DCD3FF;color:#3C2E7A;font-size:13px;line-height:1.5">
+      <span style="font-size:18px">🔔</span>
+      <span><b>신고가 1건이라도 들어오면 슬랙으로 알림이 와요.</b> 메시지의 링크를 누르면 이 화면의 해당 신고로 바로 이동해요. 자동 숨김은 없고, 운영자가 확인한 뒤 처리해요.</span>
+    </div>`;
+  return head + slackNote + stats + filters + table;
 }
 
 function renderBlocks() {
