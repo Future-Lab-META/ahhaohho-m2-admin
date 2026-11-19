@@ -889,22 +889,20 @@ function unfeature(id) { const p = post(id); p.featured = false; toast(`${p.auth
 function showPost(id) { const p = post(id); p.hidden = false; p.hiddenReason = null; toast(`${p.author.nick}의 게시물을 다시 노출했어요`); renderPM(); render(); }
 
 /* 숨김: 작성자 입장에서는 삭제와 같으므로 같은 안내 구조 */
-const HIDE_REASONS = ['부적절한 콘텐츠', '저작권 위반', '스팸·광고', '기타'];
 function openHide(id) {
-  const p = post(id); const reports = p.reports;
+  DLG_KIND = 'post'; const p = post(id); const reports = p.reports;
   $('dlg').innerHTML = `
     <div class="dlg-title">게시물 숨김</div>
     <div class="dlg-sub">갤러리와 프로필에서 보이지 않게 돼요. 나중에 노출 전환으로 되돌릴 수 있어요. 피처드 게시물이면 피처드도 함께 해제돼요.</div>
     <div class="summary-box">${mediaThumb(p.media[0])}<div class="target-text"><div class="target-title" style="max-width:360px">${esc(p.author.nick)} · ${p.challenge ? esc(p.challenge) : '자율 게시'}</div><div class="target-sub" style="max-width:360px">${esc(p.text)}</div></div></div>
-    <div class="dlg-block"><div class="dlg-label">숨김 사유 <span class="dlg-counter">운영 기록용</span></div>
-      <select class="input" id="hideReason" style="width:100%">${HIDE_REASONS.map(r => `<option>${r}</option>`).join('')}</select></div>
+    ${reasonSelect()}
     <div class="dlg-block">
       <label class="opt-row"><input type="checkbox" id="optAuthor" checked onchange="dlgSync()"> 작성자에게 안내 보내기</label>
       <div id="authorBox">
         <div class="dlg-label" style="margin-top:8px"><span style="font-weight:600;font-size:12px;color:var(--muted)">제목 (기본 문구가 채워져 있어요. 사유에 맞게 고쳐 주세요)</span><span class="dlg-counter" id="cnt"></span></div>
         <textarea id="msg" oninput="dlgSync()">${TPL.hide}</textarea>
         <div class="dlg-label" style="margin-top:10px"><span style="font-weight:600;font-size:12px;color:var(--muted)">안내 (기본 문구가 채워져 있어요. 고치거나 비울 수 있어요. 비우면 제목만 보여요)</span><span class="dlg-counter" id="cnt2"></span></div>
-        <textarea id="guide" oninput="dlgSync()">${GUIDE_TPL.post}</textarea>
+        <textarea id="guide" oninput="dlgSync()">${GUIDE_TPL.abuse.post}</textarea>
       </div>
     </div>
     ${reports.length ? `<div class="dlg-block"><label class="opt-row"><input type="checkbox" id="optReporter" checked onchange="dlgSync()"> 신고한 ${reports.length}명에게 처리 결과 알리기</label></div>` : ''}
@@ -923,7 +921,7 @@ function openHide(id) {
 }
 function confirmHide(id) {
   const p = post(id); const toAuthor = $('optAuthor').checked; const r = $('optReporter'); const toReporters = r && r.checked;
-  p.hidden = true; p.featured = false; p.hiddenReason = $('hideReason').value; p.hiddenAt = '2026-11-12 10:40';
+  p.hidden = true; p.featured = false; p.hiddenReason = $('reason').selectedOptions[0].textContent; p.hiddenAt = '2026-11-12 10:40';
   if (p.reports.length) p.reportStatus = 'hidden';
   closeDlg();
   const extra = [toAuthor && '작성자 안내', toReporters && '신고자 알림'].filter(Boolean);
@@ -938,13 +936,33 @@ const TPL = {
   comment: '남긴 댓글을 운영자가 삭제했어요.',
   hide: '올린 게시물이 다른 친구들에게 보이지 않게 됐어요.',
 };
+const REASONS = [
+  { key: 'abuse', label: '욕설이나 비방', desc: '친구를 겁주거나 괴롭히는 내용, 욕설·놀리는 말' },
+  { key: 'copy', label: '다른 창작자의 작품을 내 것처럼', desc: '출처 없이 똑같이 따라 함' },
+  { key: 'privacy', label: '개인정보 요구·공유', desc: '주소, 연락처 등' },
+  { key: 'other', label: '다른 이유가 있어요', desc: '안내 칸이 비어 있어요. 직접 써 주세요' },
+];
 const GUIDE_TPL = {
-  post: '아하오호는 많은 친구들이 함께하는 곳이에요. 올리기 전에 다른 친구가 보고 속상하지 않을지 한 번 더 생각해 주면 좋겠어요.',
-  comment: '아하오호는 많은 친구들이 함께하는 곳이에요. 남기기 전에 친구가 읽고 속상하지 않을지 한 번 더 생각해 주면 좋겠어요.',
+  abuse: { post: '아하오호는 많은 친구들이 함께하는 곳이에요. 올리기 전에 다른 친구가 보고 속상하지 않을지 한 번 더 생각해 주면 좋겠어요.',
+           comment: '아하오호는 많은 친구들이 함께하는 곳이에요. 남기기 전에 친구가 읽고 속상하지 않을지 한 번 더 생각해 주면 좋겠어요.' },
+  copy: { post: '다른 친구의 작품을 보고 만들었다면, 누구의 작품에서 아이디어를 얻었는지 함께 적어 주세요. 친구가 애써 만든 작품도 소중하니까요.',
+          comment: '다른 친구의 작품을 보고 만들었다면, 누구의 작품에서 아이디어를 얻었는지 함께 적어 주세요. 친구가 애써 만든 작품도 소중하니까요.' },
+  privacy: { post: '주소, 연락처 같은 개인정보는 나와 친구를 지키기 위해 아하오호에 올리거나 물어보지 않기로 해요.',
+             comment: '주소, 연락처 같은 개인정보는 나와 친구를 지키기 위해 아하오호에 올리거나 물어보지 않기로 해요.' },
+  other: { post: '', comment: '' },
 };
+let DLG_KIND = 'post';
+function reasonSelect() {
+  return `<div class="dlg-block"><div class="dlg-label">사유 <span class="dlg-counter">고르면 안내 문구가 바뀌어요</span></div>
+    <select class="input" id="reason" style="width:100%" onchange="applyReason()">${REASONS.map(r => `<option value="${r.key}">${r.label} (${r.desc})</option>`).join('')}</select></div>`;
+}
+function applyReason() {
+  const k = $('reason').value; $('guide').value = GUIDE_TPL[k][DLG_KIND === 'comment' ? 'comment' : 'post']; dlgSync();
+}
 const REPORTER_TPL = { post: '신고해 주신 게시물을 확인하고 삭제했어요. 알려 줘서 고마워요!', comment: '신고해 주신 댓글을 확인하고 삭제했어요. 알려 줘서 고마워요!', hide: '신고해 주신 게시물을 확인하고 다른 친구들에게 보이지 않게 했어요. 알려 줘서 고마워요!' };
 
 function openDelete(kind, postId, commentId) {
+  DLG_KIND = kind;
   const p = post(postId); const c = kind === 'comment' ? findComment(p, commentId) : null;
   const reports = kind === 'post' ? p.reports : c.reports;
   const summary = kind === 'post'
@@ -955,13 +973,14 @@ function openDelete(kind, postId, commentId) {
     <div class="dlg-title">${label} 삭제</div>
     <div class="dlg-sub">삭제하면 복구할 수 없어요.${kind === 'post' ? ' 피처드 게시물이면 피처드도 함께 해제돼요.' : ''}</div>
     ${summary}
+    ${reasonSelect()}
     <div class="dlg-block">
       <label class="opt-row"><input type="checkbox" id="optAuthor" checked onchange="dlgSync()"> 작성자에게 안내 보내기</label>
       <div id="authorBox">
         <div class="dlg-label" style="margin-top:8px"><span style="font-weight:600;font-size:12px;color:var(--muted)">제목 (기본 문구가 채워져 있어요. 사유에 맞게 고쳐 주세요)</span><span class="dlg-counter" id="cnt"></span></div>
         <textarea id="msg" oninput="dlgSync()">${TPL[kind]}</textarea>
         <div class="dlg-label" style="margin-top:10px"><span style="font-weight:600;font-size:12px;color:var(--muted)">안내 (기본 문구가 채워져 있어요. 고치거나 비울 수 있어요. 비우면 제목만 보여요)</span><span class="dlg-counter" id="cnt2"></span></div>
-        <textarea id="guide" oninput="dlgSync()">${GUIDE_TPL[kind === 'comment' ? 'comment' : 'post']}</textarea>
+        <textarea id="guide" oninput="dlgSync()">${GUIDE_TPL.abuse[kind === 'comment' ? 'comment' : 'post']}</textarea>
       </div>
     </div>
     ${reports.length ? `<div class="dlg-block"><label class="opt-row"><input type="checkbox" id="optReporter" checked onchange="dlgSync()"> 신고한 ${reports.length}명에게 처리 결과 알리기</label></div>` : ''}
