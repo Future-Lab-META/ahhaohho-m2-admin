@@ -909,11 +909,11 @@ function openHide(id) {
     <div class="dlg-block">
       <div class="dlg-label">앱에서 이렇게 보여요</div>
       <div class="preview-row">
-        <div class="phone" id="pvAuthor"><div class="phone-cap">작성자 · 앱 진입 시 모달</div>
+        <div class="phone" id="pvAuthor"><div class="phone-cap">작성자 · 인앱 알림 "아하오호에서 메시지가 왔어요." → 누르면 모달</div>
           <div class="app-modal"><div class="app-modal-title" id="pvMsg"></div><div class="app-modal-body" id="pvGuide"></div>
           <div class="app-modal-btns"><span class="pri">그라운드룰 보러 가기</span></div></div></div>
         <div class="phone" id="pvReporter" style="${reports.length ? '' : 'opacity:.35'}"><div class="phone-cap">신고자 · 인앱 알림</div>
-          <div class="app-noti">🔔 ${reports.length ? REPORTER_TPL.hide : '신고자가 없어 보내지 않아요'}</div></div>
+          <div class="app-noti">🔔 ${reports.length ? '아하오호에서 메시지가 왔어요.' : '신고자가 없어 보내지 않아요'}</div>${reports.length ? `<div class="phone-cap" style="margin-top:6px">누르면 처리 결과 모달: ${REPORTER_TPL.hide}</div>` : ''}</div>
       </div>
     </div>
     <div class="dlg-foot"><button class="btn" onclick="closeDlg()">취소</button><button class="btn primary" id="okBtn" onclick="confirmHide('${id}')">숨김 처리</button></div>`;
@@ -987,11 +987,11 @@ function openDelete(kind, postId, commentId) {
     <div class="dlg-block">
       <div class="dlg-label">앱에서 이렇게 보여요</div>
       <div class="preview-row">
-        <div class="phone" id="pvAuthor"><div class="phone-cap">작성자 · 앱 진입 시 모달</div>
+        <div class="phone" id="pvAuthor"><div class="phone-cap">작성자 · 인앱 알림 "아하오호에서 메시지가 왔어요." → 누르면 모달</div>
           <div class="app-modal"><div class="app-modal-title" id="pvMsg"></div><div class="app-modal-body" id="pvGuide"></div>
           <div class="app-modal-btns"><span class="pri">그라운드룰 보러 가기</span></div></div></div>
         <div class="phone" id="pvReporter" style="${reports.length ? '' : 'opacity:.35'}"><div class="phone-cap">신고자 · 인앱 알림</div>
-          <div class="app-noti">🔔 ${reports.length ? REPORTER_TPL[kind] : '신고자가 없어 보내지 않아요'}</div></div>
+          <div class="app-noti">🔔 ${reports.length ? '아하오호에서 메시지가 왔어요.' : '신고자가 없어 보내지 않아요'}</div>${reports.length ? `<div class="phone-cap" style="margin-top:6px">누르면 처리 결과 모달: ${REPORTER_TPL[kind]}</div>` : ''}</div>
       </div>
     </div>
     <div class="dlg-foot"><button class="btn" onclick="closeDlg()">취소</button><button class="btn danger" id="okBtn" onclick="confirmDelete('${kind}','${postId}','${commentId || ''}')">삭제하기</button></div>`;
