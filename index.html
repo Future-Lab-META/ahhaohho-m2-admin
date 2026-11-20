@@ -28,6 +28,11 @@
   .btn-memo.on { background: var(--ink); color: #fff; }
 
   .snb { position: fixed; top: 64px; left: 0; bottom: 0; width: 248px; border-right: 1px solid var(--line2); padding: 20px 14px; overflow-y: auto; background: #fff; }
+  .snb-cat { margin-bottom: 4px; }
+  .snb-cat-btn { width: 100%; height: 40px; padding: 0 14px; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; border: 0; background: transparent; font: inherit; font-size: 14px; font-weight: 700; color: #374151; border-radius: 8px; cursor: pointer; }
+  .snb-cat-btn:hover:not(:disabled) { color: #111827; background: var(--soft); }
+  .snb-cat-btn:disabled { cursor: default; }
+  .snb-cat-items { margin-bottom: 8px; }
   .snb-item { height: 44px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; font-size: 15px; color: rgba(5,5,5,0.85); margin-bottom: 2px; }
   .snb-item.static { color: rgba(5,5,5,0.35); cursor: default; }
   .snb-item.nav { cursor: pointer; }
@@ -90,7 +95,7 @@
   .b-akk { background: #111; color: var(--brand); }
   .b-class { background: #fff; color: #1d4ed8; border: 1px solid #bfdbfe; }
 
-  /* 프로젝트 관리 필터: 줄마다 무엇을 거르는지 라벨 */
+  /* 게시물 관리 필터: 줄마다 무엇을 거르는지 라벨 */
   .fbox { border: 1px solid var(--line); border-radius: 12px; padding: 6px 16px; margin-bottom: 12px; background: #fff; }
   .frow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 0; border-bottom: 1px dashed var(--line); }
   .frow:last-child { border-bottom: none; }
@@ -450,13 +455,19 @@ function reportRows() {
 }
 
 /* ───────────────────────── 사이드 메뉴 ───────────────────────── */
+/* 사이드바: 개발 develop 브랜치 src/config/nav.ts(카테고리형, PR #330·#332) 구성을 따름. M2 신규 메뉴만 추가 */
+const NAV = [
+  ['콘텐츠', [['static', '챌린지 관리'], ['static', '고정 데이터'], ['static', '보상 관리']]],
+  ['커뮤니티 운영', [['nav', '게시물 관리', 'project', 'up'], ['nav', '댓글 관리', 'comments', 'new'], ['nav', '신고·차단 관리', 'reports', 'new'], ['static', '문의 관리'], ['static', '블랙리스트'], ['static', '금칙어']]],
+  ['크루', [['static', '체험단 관리']]],
+  ['메시징', [['static', '캠페인'], ['static', '템플릿'], ['static', '직접 발송']]],
+  ['앱', [['static', '앱 설정'], ['static', '테스트 계정']]],
+  ['FLC', [['static', '진입 팝업'], ['static', '네트워크 점검']]],
+  ['시스템', [['static', '관리자 계정']]],
+];
+S.snbOpen = S.snbOpen || {};
+function toggleCat(c) { S.snbOpen[c] = !S.snbOpen[c]; renderSnb(); }
 function renderSnb() {
-  const groups = [
-    ['콘텐츠', [['static', '챌린지 관리'], ['static', '고정 데이터 관리'], ['static', '보상 관리']]],
-    ['게시물·댓글', [['nav', '프로젝트 관리', 'project', 'up'], ['nav', '댓글 관리', 'comments', 'new'], ['nav', '신고·차단 관리', 'reports', 'new']]],
-    ['회원', [['static', '체험단 관리'], ['static', '문의 관리'], ['static', '블랙리스트 관리']]],
-    ['앱·시스템', [['static', '앱 설정 관리'], ['static', 'FLC 진입 팝업'], ['static', '네트워크 점검'], ['static', '사용자 관리'], ['static', '테스트 계정 관리']]],
-  ];
   const pending = reportRows().filter(r => r.status === 'pending').length;
   const item = ([k, label, page, tag]) => {
     if (k === 'static') return `<div class="snb-item static">${label}</div>`;
@@ -464,9 +475,15 @@ function renderSnb() {
     const c = page === 'reports' && pending ? `<span class="count red">${pending}</span>` : t;
     return `<div class="snb-item nav ${S.page === page ? 'active' : ''}" onclick="go('${page}')"><span>${label}</span>${c}</div>`;
   };
-  $('snb').innerHTML = groups.map(([g, items], gi) =>
-    `<div class="snb-group" style="${gi ? 'margin-top:14px;padding-top:14px;border-top:1px solid var(--line2);' : ''}"><div style="font-size:12px;font-weight:700;color:rgba(5,5,5,0.45);padding:0 14px 6px">${g}</div>${items.map(item).join('')}</div>`
-  ).join('');
+  $('snb').innerHTML = NAV.map(([cat, items]) => {
+    const active = items.some(x => x[0] === 'nav' && x[2] === S.page);
+    const open = active || !!S.snbOpen[cat];
+    const chev = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;transition:transform .15s;transform:rotate(${open ? 0 : -90}deg);${active ? 'opacity:.4' : ''}"><path d="M6 9l6 6 6-6"/></svg>`;
+    return `<div class="snb-cat">
+      <button class="snb-cat-btn" ${active ? 'disabled' : ''} onclick="toggleCat('${cat}')"><span>${cat}</span>${chev}</button>
+      ${open ? `<div class="snb-cat-items">${items.map(item).join('')}</div>` : ''}
+    </div>`;
+  }).join('');
 }
 function go(page) { S.page = page; render(); window.scrollTo(0, 0); }
 
@@ -633,7 +650,7 @@ function renderComments() {
     <div class="table-wrap"><table class="table">${thead}${body || '<tbody><tr><td colspan="7" class="empty">조건에 맞는 댓글이 없어요</td></tr></tbody>'}</table></div>`;
 }
 
-/* ───────────────────────── 페이지: 프로젝트 관리 ───────────────────────── */
+/* ───────────────────────── 페이지: 게시물 관리 ───────────────────────── */
 function renderProject() {
   const q = S.projUser.trim();
   const byUser = POSTS.filter(p => p.status === 'normal' && (!q || p.author.nick.includes(q))
@@ -647,7 +664,7 @@ function renderProject() {
   const nicks = [...new Set(POSTS.map(p => p.author.nick))];
   return `
     <div class="page-head"><div>
-      <div class="page-title">프로젝트 관리 <span class="tag up">개선</span></div>
+      <div class="page-title">게시물 관리 <span class="tag up">개선</span></div>
       <div class="page-desc">게시물을 조회하고 프로젝트를 관리(피처드 지정/숨김/삭제)합니다. <b>카드를 누르면 게시물 상세가 열려요.</b></div>
     </div></div>
     <div class="tabs">
@@ -803,7 +820,7 @@ function renderPM() {
   const sanction = `<div class="left"><button class="btn sm muted" onclick="notReady()">사용자 제재</button></div>`;
   const postActions = `${p.hidden ? `<button class="btn" onclick="showPost('${p.id}')">노출 전환</button>` : `<button class="btn" onclick="openHide('${p.id}')">숨김</button>`}<button class="btn danger" onclick="openDelete('post','${p.id}')">게시물 삭제</button>`;
   if (ctx === 'project') {
-    ctxLabel = '프로젝트 관리에서 연 상태';
+    ctxLabel = '게시물 관리에서 연 상태';
     foot = gone ? closeOnly(goneBadge) : `${sanction}
       <button class="btn" onclick="${p.featured ? `unfeature('${p.id}')` : `openFeature('${p.id}')`}">${p.featured ? '피처드 해제' : '피처드 지정'}</button>${postActions}`;
   } else if (ctx === 'report-post') {
@@ -1058,7 +1075,7 @@ function closeDlg() { $('dlgOverlay').classList.remove('open'); }
 const MEMO = {
   reports: {
     title: '신고·차단 관리 (신규 메뉴)',
-    sub: '게시물·댓글 신고를 "신고된 대상" 단위로 한 목록에 모으고, 누르면 프로젝트 관리와 같은 게시물 모달이 열려요.',
+    sub: '게시물·댓글 신고를 "신고된 대상" 단위로 한 목록에 모으고, 누르면 게시물 관리와 같은 게시물 모달이 열려요.',
     git: [
       '게시물 신고는 <code>ao-gallery-server</code> <code>reports</code> 컬렉션에 저장됨. 신고자 한 명당 문서 하나에 {게시물 id, 사유, 상세}를 쌓는 구조',
       '게시물 신고에는 <b>접수 시각·처리 상태 필드가 없음</b>. 같은 게시물을 다시 신고하면 앞 신고를 덮어씀',
@@ -1070,7 +1087,7 @@ const MEMO = {
     ],
     prop: [
       '게시물 신고와 댓글 신고를 한 목록에. 같은 대상에 신고가 여러 건이면 한 줄로 묶고 신고 수를 보여 줌',
-      '행을 누르면 <b>프로젝트 관리와 같은 게시물 모달</b>이 열림. 댓글 신고면 댓글 탭에서 그 댓글이 강조된 채로 열림',
+      '행을 누르면 <b>게시물 관리와 같은 게시물 모달</b>이 열림. 댓글 신고면 댓글 탭에서 그 댓글이 강조된 채로 열림',
       '운영자 조치는 <b>삭제</b>·<b>숨김</b>·<b>기각</b>만. 사용자 제재는 버튼만 두고 "준비 중인 기능입니다"',
       '삭제할 때 작성자 안내 문구가 기본으로 채워져 있고, 신고자에게 처리 결과 알림을 함께 보냄',
       '신고 1건마다 슬랙 알림, 메시지에서 어드민 해당 건으로 바로 이동',
@@ -1091,7 +1108,7 @@ const MEMO = {
   },
   comments: {
     title: '댓글 관리 (신규 메뉴)',
-    sub: '신고가 들어오지 않은 댓글까지 운영자가 먼저 찾아보는 화면. 프로젝트 관리는 게시물을 하나씩 열어야 댓글이 보이고, 신고·차단 관리는 신고·차단된 것만 보여서 이 역할은 여기서만 함.',
+    sub: '신고가 들어오지 않은 댓글까지 운영자가 먼저 찾아보는 화면. 게시물 관리는 게시물을 하나씩 열어야 댓글이 보이고, 신고·차단 관리는 신고·차단된 것만 보여서 이 역할은 여기서만 함.',
     git: [
       '갤러리 댓글은 <code>ao-community-server</code>의 galleryReply에서 작성·수정·삭제·좋아요·숨김·신고·차단을 처리함',
       '교사(클래스 관리자)용 클래스 단위 이용 제한(ban) API가 있음. 운영자용 댓글 조회·삭제 API는 없음',
@@ -1115,7 +1132,7 @@ const MEMO = {
     ],
   },
   project: {
-    title: '프로젝트 관리 (기존 메뉴 개선)',
+    title: '게시물 관리 (기존 메뉴 개선)',
     sub: '카드를 누르면 게시물 상세 모달이 열려요. 이 모달을 신고·댓글 관리에서도 그대로 씀.',
     git: [
       '지금은 카드 그리드만 있고 <b>게시물 상세 화면이 없음</b>',
