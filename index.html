@@ -920,14 +920,14 @@ function openHide(id) {
     <div class="dlg-title">게시물 숨김</div>
     <div class="dlg-sub">갤러리와 프로필에서 보이지 않게 돼요. 나중에 노출 전환으로 되돌릴 수 있어요. 피처드 게시물이면 피처드도 함께 해제돼요.</div>
     <div class="summary-box">${mediaThumb(p.media[0])}<div class="target-text"><div class="target-title" style="max-width:360px">${esc(p.author.nick)} · ${p.challenge ? esc(p.challenge) : '자율 게시'}</div><div class="target-sub" style="max-width:360px">${esc(p.text)}</div></div></div>
-    ${reasonSelect()}
+    ${reasonSelect(reports)}
     <div class="dlg-block">
       <label class="opt-row"><input type="checkbox" id="optAuthor" checked onchange="dlgSync()"> 작성자에게 안내 보내기</label>
       <div id="authorBox">
         <div class="dlg-label" style="margin-top:8px"><span style="font-weight:600;font-size:12px;color:var(--muted)">제목 (기본 문구가 채워져 있어요. 사유에 맞게 고쳐 주세요)</span><span class="dlg-counter" id="cnt"></span></div>
         <textarea id="msg" oninput="dlgSync()">${esc(titleFor('hide', p))}</textarea>
         <div class="dlg-label" style="margin-top:10px"><span style="font-weight:600;font-size:12px;color:var(--muted)">안내 (기본 문구가 채워져 있어요. 고치거나 비울 수 있어요. 비우면 제목만 보여요)</span><span class="dlg-counter" id="cnt2"></span></div>
-        <textarea id="guide" oninput="dlgSync()">${GUIDE_TPL.abuse.post}</textarea>
+        <textarea id="guide" oninput="dlgSync()">${guideFor(presetReason(reports))}</textarea>
       </div>
     </div>
     ${reports.length ? `<div class="dlg-block"><label class="opt-row"><input type="checkbox" id="optReporter" checked onchange="dlgSync()"> 신고한 ${reports.length}명에게 처리 결과 알리기</label></div>` : ''}
@@ -963,6 +963,7 @@ const TPL = {
 };
 const REASONS = [
   { key: 'abuse', label: '욕설이나 비방', desc: '친구를 겁주거나 괴롭히는 내용, 욕설·놀리는 말' },
+  { key: 'danger', label: '무섭거나 위험한 내용', desc: '보기에 무섭거나 따라 하면 다칠 수 있음' },
   { key: 'copy', label: '다른 창작자의 작품을 내 것처럼', desc: '출처 없이 똑같이 따라 함' },
   { key: 'privacy', label: '개인정보 요구·공유', desc: '주소, 연락처 등' },
   { key: 'other', label: '다른 이유가 있어요', desc: '안내 칸이 비어 있어요. 직접 써 주세요' },
@@ -970,6 +971,8 @@ const REASONS = [
 const GUIDE_TPL = {
   abuse: { post: '아하오호는 많은 친구들이 함께하는 곳이에요. 올리기 전에 다른 친구가 보고 속상하지 않을지 한 번 더 생각해 주면 좋겠어요.',
            comment: '아하오호는 많은 친구들이 함께하는 곳이에요. 남기기 전에 친구가 읽고 속상하지 않을지 한 번 더 생각해 주면 좋겠어요.' },
+  danger: { post: '다른 친구가 보고 무섭거나 따라 하다 다칠 수 있는 내용은 올리지 않기로 해요.',
+            comment: '다른 친구가 읽고 무섭거나 따라 하다 다칠 수 있는 내용은 남기지 않기로 해요.' },
   copy: { post: '다른 친구나 작가가 만든 작품을 그대로 가져와 올리면 안 돼요. 참고했다면 누구의 작품인지 함께 적고, 나만의 아이디어를 더해 만들어 주세요.',
           comment: '다른 친구나 작가가 만든 작품을 그대로 가져와 올리면 안 돼요. 참고했다면 누구의 작품인지 함께 적고, 나만의 아이디어를 더해 만들어 주세요.' },
   privacy: { post: '주소, 연락처 같은 개인정보는 나와 친구를 지키기 위해 아하오호에 올리거나 물어보지 않기로 해요.',
@@ -985,13 +988,26 @@ function titleFor(kind, p, c) {
   return `${kDate(c.at)}에 남긴 "${snip5(c.text)}" ${isReply ? '답글' : '댓글'}을 운영자가 삭제했어요.`;
 }
 let DLG_KIND = 'post';
-function reasonSelect() {
-  return `<div class="dlg-block"><div class="dlg-label">사유 <span class="dlg-counter">고르면 안내 문구가 바뀌어요</span></div>
-    <select class="input" id="reason" style="width:100%" onchange="applyReason()">${REASONS.map(r => `<option value="${r.key}">${r.label} (${r.desc})</option>`).join('')}</select></div>`;
+/* 신고 사유(앱) → 운영자 사유(어드민) 미리 채우기 */
+const REPORT_TO_REASON = { offensive: 'abuse', violent: 'danger', privacy: 'privacy', other: 'other' };
+function presetReason(reports) {
+  if (!reports || !reports.length) return '';
+  const cnt = {}; reports.forEach(r => { cnt[r.reason] = (cnt[r.reason] || 0) + 1; });
+  const top = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0];
+  return REPORT_TO_REASON[top] || 'other';
 }
-function applyReason() {
-  const k = $('reason').value; $('guide').value = GUIDE_TPL[k][DLG_KIND === 'comment' ? 'comment' : 'post']; dlgSync();
+function guideFor(key) { return key ? GUIDE_TPL[key][DLG_KIND === 'comment' ? 'comment' : 'post'] : ''; }
+function reasonSelect(reports) {
+  const pre = presetReason(reports);
+  const cnt = {}; (reports || []).forEach(r => { cnt[r.reason] = (cnt[r.reason] || 0) + 1; });
+  const summary = Object.keys(cnt).map(k => `${REASON[k]} ${cnt[k]}건`).join(' · ');
+  return `<div class="dlg-block"><div class="dlg-label">사유 <span class="dlg-counter">${pre ? '신고 사유에 맞춰 골라 뒀어요. 확인 후 바꿀 수 있어요' : '고르면 안내 문구가 채워져요'}</span></div>
+    ${summary ? `<div class="dlg-sub" style="margin:0 0 6px">신고 사유: ${esc(summary)}</div>` : ''}
+    <select class="input" id="reason" style="width:100%" onchange="applyReason()">
+      <option value="" ${pre ? '' : 'selected'} disabled>사유를 골라 주세요</option>
+      ${REASONS.map(r => `<option value="${r.key}" ${r.key === pre ? 'selected' : ''}>${r.label} (${r.desc})</option>`).join('')}</select></div>`;
 }
+function applyReason() { $('guide').value = guideFor($('reason').value); dlgSync(); }
 const REPORTER_TPL = { post: '신고해 주신 게시물을 확인하고 삭제했어요. 알려 줘서 고마워요! 모두가 즐겁게 창작할 수 있는 아하오호가 되도록 더 노력할게요.', comment: '신고해 주신 댓글을 확인하고 삭제했어요. 알려 줘서 고마워요! 모두가 즐겁게 창작할 수 있는 아하오호가 되도록 더 노력할게요.', hide: '신고해 주신 게시물을 확인하고 다른 친구들에게 보이지 않게 했어요. 알려 줘서 고마워요! 모두가 즐겁게 창작할 수 있는 아하오호가 되도록 더 노력할게요.' };
 
 function openDelete(kind, postId, commentId) {
@@ -1006,14 +1022,14 @@ function openDelete(kind, postId, commentId) {
     <div class="dlg-title">${label} 삭제</div>
     <div class="dlg-sub">삭제하면 복구할 수 없어요.${kind === 'post' ? ' 피처드 게시물이면 피처드도 함께 해제돼요.' : ''}</div>
     ${summary}
-    ${reasonSelect()}
+    ${reasonSelect(reports)}
     <div class="dlg-block">
       <label class="opt-row"><input type="checkbox" id="optAuthor" checked onchange="dlgSync()"> 작성자에게 안내 보내기</label>
       <div id="authorBox">
         <div class="dlg-label" style="margin-top:8px"><span style="font-weight:600;font-size:12px;color:var(--muted)">제목 (기본 문구가 채워져 있어요. 사유에 맞게 고쳐 주세요)</span><span class="dlg-counter" id="cnt"></span></div>
         <textarea id="msg" oninput="dlgSync()">${esc(titleFor(kind, p, c))}</textarea>
         <div class="dlg-label" style="margin-top:10px"><span style="font-weight:600;font-size:12px;color:var(--muted)">안내 (기본 문구가 채워져 있어요. 고치거나 비울 수 있어요. 비우면 제목만 보여요)</span><span class="dlg-counter" id="cnt2"></span></div>
-        <textarea id="guide" oninput="dlgSync()">${GUIDE_TPL.abuse[kind === 'comment' ? 'comment' : 'post']}</textarea>
+        <textarea id="guide" oninput="dlgSync()">${guideFor(presetReason(reports))}</textarea>
       </div>
     </div>
     ${reports.length ? `<div class="dlg-block"><label class="opt-row"><input type="checkbox" id="optReporter" checked onchange="dlgSync()"> 신고한 ${reports.length}명에게 처리 결과 알리기</label></div>` : ''}
@@ -1038,7 +1054,8 @@ function dlgSync() {
   $('pvGuide').textContent = on ? guide : ''; $('pvGuide').style.display = on && guide.trim() ? '' : 'none';
   const cnt = $('cnt'); cnt.textContent = `${msg.length} / ${MAXLEN}`; cnt.classList.toggle('over', msg.length > MAXLEN);
   const cnt2 = $('cnt2'); cnt2.textContent = `${guide.length} / ${MAXLEN}`; cnt2.classList.toggle('over', guide.length > MAXLEN);
-  $('okBtn').disabled = on && (msg.trim().length === 0 || msg.length > MAXLEN || guide.length > MAXLEN);
+  const noReason = !$('reason').value;
+  $('okBtn').disabled = noReason || (on && (msg.trim().length === 0 || msg.length > MAXLEN || guide.length > MAXLEN));
   $('okBtn').style.opacity = $('okBtn').disabled ? 0.4 : 1;
   const r = $('optReporter'); if (r) $('pvReporter').style.opacity = r.checked ? 1 : 0.35;
 }
@@ -1167,7 +1184,8 @@ const MEMO = {
       '클래스 이름 검색 API(지금은 글이 있는 클래스 전체를 한 번에 내려 드롭다운에 넣는 구조)',
       '게시물 목록 API에 작성자 닉네임 검색 조건 추가(닉네임은 membership에서 조회하므로 닉네임 → userId 변환 필요)',
       '자율 창작 피처드 지정이 지금 개발 범위 밖(기존 기획 문서 기준)이라 포함 여부 확인',
-      '숨김·삭제 안내는 제목·안내 두 칸. 사유(욕설이나 비방 / 다른 창작자의 작품을 내 것처럼 / 개인정보 요구·공유 / 다른 이유)를 고르면 안내 기본 문구가 채워지고 고칠 수 있음. 어드민 API에 안내 칸 추가 필요',
+      '숨김·삭제 안내는 제목·안내 두 칸. 사유(욕설이나 비방 / 무섭거나 위험한 내용 / 다른 창작자의 작품을 내 것처럼 / 개인정보 요구·공유 / 다른 이유)를 고르면 안내 기본 문구가 채워지고 고칠 수 있음. 어드민 API에 안내 칸 추가 필요',
+      '사유는 신고 사유에 맞춰 미리 골라 둠(모욕적이거나 악의적인 내용 → 욕설이나 비방, 지나치게 폭력적이거나 위험함 → 무섭거나 위험한 내용, 개인정보 노출 및 요구 → 개인정보 요구·공유, 기타 → 다른 이유). 신고자마다 다르면 가장 많은 사유 기준(같으면 먼저 들어온 신고). 신고 없는 건은 기본값 없이 시작, 사유를 골라야 처리 가능',
       '숨김·삭제가 앱에 제대로 반영되지 않는 문제 수정(사용자 문의 예정)',
       '용량 큰 원본 영상의 로딩 방식(스트리밍·미리 불러오기)',
     ],
