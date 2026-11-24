@@ -323,7 +323,9 @@
 <script>
 /* ───────────────────────── 예시 데이터 ───────────────────────── */
 const A = 'assets/';
-const REASON = { violent: '지나치게 폭력적이거나 위험함', offensive: '모욕적이거나 악의적인 내용', privacy: '개인정보 노출 및 요구', other: '기타' };
+/* 신고 사유 = 운영자 사유. 앱 신고 화면 문구 기준(댓글 4종, 게시물 5종: copy는 게시물만) */
+const REASON = { threat: '친구를 겁주거나 괴롭히는 내용', abuse: '욕설, 놀리는 말 등을 사용', privacy: '개인 정보(주소, 연락처 등) 공유', copy: '출처 언급 없이 똑같이 따라 함', other: '다른 이유가 있어요' };
+const REASON_KEYS = { post: ['threat', 'abuse', 'privacy', 'copy', 'other'], comment: ['threat', 'abuse', 'privacy', 'other'] };
 const NOW = new Date('2026-11-12T10:30:00');
 
 const POSTS = [
@@ -332,13 +334,13 @@ const POSTS = [
     media: [ { type: 'video', src: A+'v1.mp4' }, { type: 'image', src: A+'p3.jpg' }, { type: 'image', src: A+'p1.jpg' } ],
     reactions: 14, featured: false, hidden: false, status: 'normal',
     reports: [
-      { reporter: '고양이수염', reason: 'other', detail: '다른 친구 영상을 그대로 올린 것 같아요', at: '2026-11-12 08:10' },
+      { reporter: '고양이수염', reason: 'copy', detail: '다른 친구 영상을 그대로 올린 것 같아요', at: '2026-11-12 08:10' },
     ],
     comments: [
       { id: 'c1', author: '구름빵', text: '우와 강아지가 진짜 뛰는 것 같아! 몇 장 그렸어?', at: '2026-11-11 20:01', status: 'normal', reports: [],
         replies: [ { id: 'c1r1', author: '별똥별탐험가', text: '12장 그렸어! 다음엔 고양이 해볼거야', at: '2026-11-11 20:15', status: 'normal', reports: [] } ] },
       { id: 'c2', author: '번개맨123', text: '이거 진짜 별로다 ㅋㅋ 누가 이런 걸 올려', at: '2026-11-11 21:30', status: 'normal',
-        reports: [ { reporter: '별똥별탐험가', reason: 'offensive', detail: '', at: '2026-11-11 21:35' }, { reporter: '구름빵', reason: 'offensive', detail: '친구 작품을 놀려요', at: '2026-11-11 22:02' } ], replies: [
+        reports: [ { reporter: '별똥별탐험가', reason: 'abuse', detail: '', at: '2026-11-11 21:35' }, { reporter: '구름빵', reason: 'abuse', detail: '친구 작품을 놀려요', at: '2026-11-11 22:02' } ], replies: [
           { id: 'c2r1', author: '별똥별탐험가', text: '왜 그렇게 말해? 나 열심히 만들었는데', at: '2026-11-11 21:40', status: 'normal', reports: [] },
           { id: 'c2r2', author: '구름빵', text: '친구 작품에 그런 말 하면 안 돼', at: '2026-11-11 22:00', status: 'normal', reports: [] },
           { id: 'c2r3', author: '번개맨123', text: '그냥 장난이었어 ㅋㅋ 너 몇 학년이야?', at: '2026-11-11 22:10', status: 'normal',
@@ -360,7 +362,7 @@ const POSTS = [
     media: [ { type: 'video', src: A+'v2.mp4' }, { type: 'image', src: A+'p2.jpg' } ],
     reactions: 9, featured: false, hidden: false, status: 'normal',
     reports: [
-      { reporter: '번개맨123', reason: 'violent', detail: '무서워요', at: '2026-11-10 18:40' },
+      { reporter: '번개맨123', reason: 'threat', detail: '무서워요', at: '2026-11-10 18:40' },
       { reporter: '익명의곰돌이', reason: 'other', detail: '', at: '2026-11-11 09:12' },
     ], comments: [] },
   { id: 'g4', type: 'common', challenge: null, author: { nick: '번개맨123', crew: null }, scope: [{ name: 'FutureLab', system: true, akk: false }], curation: null, postedAt: '2026-11-09 20:11',
@@ -377,17 +379,17 @@ const POSTS = [
   { id: 'g6', type: 'common', challenge: null, author: { nick: '민트초코칩', crew: null }, scope: [{ name: '한빛초 4학년 1반', system: false, akk: false }], curation: null, postedAt: '2026-11-07 15:45',
     text: '오늘 만든 거',
     media: [ { type: 'image', src: A+'p1.jpg' } ],
-    reactions: 1, featured: false, hidden: true, hiddenReason: '욕설이나 비방', hiddenAt: '2026-11-07 17:00', status: 'normal',
-    reports: [ { reporter: '해바라기씨', reason: 'offensive', detail: '', at: '2026-11-07 16:30' } ], reportStatus: 'hidden',
+    reactions: 1, featured: false, hidden: true, hiddenReason: '욕설, 놀리는 말 등을 사용', hiddenAt: '2026-11-07 17:00', status: 'normal',
+    reports: [ { reporter: '해바라기씨', reason: 'abuse', detail: '', at: '2026-11-07 16:30' } ], reportStatus: 'hidden',
     comments: [] },
 ];
 POSTS.push(
   { id: 'g7', type: 'common', challenge: null, author: { nick: '번개맨123', crew: null }, scope: [], postedAt: '2026-11-06 18:20',
     text: '', media: [], reactions: 0, featured: false, hidden: false, status: 'user_deleted', deletedAt: '2026-11-07 09:02',
-    reports: [ { reporter: '구름빵', reason: 'offensive', detail: '친구 그림에 낙서해서 올렸어요', at: '2026-11-06 19:00' } ], comments: [] },
+    reports: [ { reporter: '구름빵', reason: 'abuse', detail: '친구 그림에 낙서해서 올렸어요', at: '2026-11-06 19:00' } ], comments: [] },
   { id: 'g8', type: 'challenge', challenge: '우리가 보는 모든 것에 눈이 있다면', author: { nick: '민트초코칩', crew: null }, scope: [], postedAt: '2026-11-05 13:10',
     text: '우리 반 친구들 단체 사진 ㅋㅋ 누가 누군지 맞혀 봐', media: [ { type: 'image', src: A+'p6.jpg' } ], reactions: 2, featured: false, hidden: false,
-    status: 'deleted', deletedAt: '2026-11-05 15:40', deletedNote: '개인정보 노출 및 요구',
+    status: 'deleted', deletedAt: '2026-11-05 15:40', deletedNote: '개인 정보(주소, 연락처 등) 공유',
     reports: [ { reporter: '해바라기씨', reason: 'privacy', detail: '다른 친구 얼굴이 나와요', at: '2026-11-05 14:02' } ], comments: [] },
 );
 // 이미 처리된 예시
@@ -961,22 +963,14 @@ const TPL = {
   comment: '남긴 댓글을 운영자가 삭제했어요.',
   hide: '올린 게시물이 다른 친구들에게 보이지 않게 됐어요.',
 };
-const REASONS = [
-  { key: 'abuse', label: '욕설이나 비방', desc: '친구를 겁주거나 괴롭히는 내용, 욕설·놀리는 말' },
-  { key: 'danger', label: '무섭거나 위험한 내용', desc: '보기에 무섭거나 따라 하면 다칠 수 있음' },
-  { key: 'copy', label: '다른 창작자의 작품을 내 것처럼', desc: '출처 없이 똑같이 따라 함' },
-  { key: 'privacy', label: '개인정보 요구·공유', desc: '주소, 연락처 등' },
-  { key: 'other', label: '다른 이유가 있어요', desc: '안내 칸이 비어 있어요. 직접 써 주세요' },
-];
 const GUIDE_TPL = {
+  threat: { post: '아하오호는 많은 친구들이 함께하는 곳이에요. 올리기 전에 다른 친구가 보고 속상하지 않을지 한 번 더 생각해 주면 좋겠어요.',
+            comment: '아하오호는 많은 친구들이 함께하는 곳이에요. 남기기 전에 친구가 읽고 속상하지 않을지 한 번 더 생각해 주면 좋겠어요.' },
   abuse: { post: '아하오호는 많은 친구들이 함께하는 곳이에요. 올리기 전에 다른 친구가 보고 속상하지 않을지 한 번 더 생각해 주면 좋겠어요.',
            comment: '아하오호는 많은 친구들이 함께하는 곳이에요. 남기기 전에 친구가 읽고 속상하지 않을지 한 번 더 생각해 주면 좋겠어요.' },
-  danger: { post: '다른 친구가 보고 무섭거나 따라 하다 다칠 수 있는 내용은 올리지 않기로 해요.',
-            comment: '다른 친구가 읽고 무섭거나 따라 하다 다칠 수 있는 내용은 남기지 않기로 해요.' },
-  copy: { post: '다른 친구나 작가가 만든 작품을 그대로 가져와 올리면 안 돼요. 참고했다면 누구의 작품인지 함께 적고, 나만의 아이디어를 더해 만들어 주세요.',
-          comment: '다른 친구나 작가가 만든 작품을 그대로 가져와 올리면 안 돼요. 참고했다면 누구의 작품인지 함께 적고, 나만의 아이디어를 더해 만들어 주세요.' },
   privacy: { post: '주소, 연락처 같은 개인정보는 나와 친구를 지키기 위해 아하오호에 올리거나 물어보지 않기로 해요.',
              comment: '주소, 연락처 같은 개인정보는 나와 친구를 지키기 위해 아하오호에 올리거나 물어보지 않기로 해요.' },
+  copy: { post: '다른 친구나 작가가 만든 작품을 그대로 가져와 올리면 안 돼요. 참고했다면 누구의 작품인지 함께 적고, 나만의 아이디어를 더해 만들어 주세요.' },
   other: { post: '', comment: '' },
 };
 const kDate = s => { const [y, m, d] = String(s).split(' ')[0].split('-'); return `${+m}월 ${+d}일`; };
@@ -988,24 +982,26 @@ function titleFor(kind, p, c) {
   return `${kDate(c.at)}에 남긴 "${snip5(c.text)}" ${isReply ? '답글' : '댓글'}을 운영자가 삭제했어요.`;
 }
 let DLG_KIND = 'post';
-/* 신고 사유(앱) → 운영자 사유(어드민) 미리 채우기 */
-const REPORT_TO_REASON = { offensive: 'abuse', violent: 'danger', privacy: 'privacy', other: 'other' };
+/* 신고 사유 그대로 미리 고르기: 가장 많은 사유 → 같으면 '다른 이유가 있어요'보다 구체적인 사유 → 그래도 같으면 먼저 들어온 신고 */
 function presetReason(reports) {
   if (!reports || !reports.length) return '';
-  const cnt = {}; reports.forEach(r => { cnt[r.reason] = (cnt[r.reason] || 0) + 1; });
-  const top = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0];
-  return REPORT_TO_REASON[top] || 'other';
+  const cnt = {}, first = {};
+  reports.forEach((r, i) => { cnt[r.reason] = (cnt[r.reason] || 0) + 1; if (!(r.reason in first)) first[r.reason] = i; });
+  const keys = Object.keys(cnt).filter(k => REASON_KEYS[DLG_KIND === 'comment' ? 'comment' : 'post'].includes(k));
+  keys.sort((a, b) => (cnt[b] - cnt[a]) || ((a === 'other') - (b === 'other')) || (first[a] - first[b]));
+  return keys[0] || 'other';
 }
-function guideFor(key) { return key ? GUIDE_TPL[key][DLG_KIND === 'comment' ? 'comment' : 'post'] : ''; }
+function guideFor(key) { return key ? (GUIDE_TPL[key][DLG_KIND === 'comment' ? 'comment' : 'post'] || '') : ''; }
 function reasonSelect(reports) {
   const pre = presetReason(reports);
   const cnt = {}; (reports || []).forEach(r => { cnt[r.reason] = (cnt[r.reason] || 0) + 1; });
   const summary = Object.keys(cnt).map(k => `${REASON[k]} ${cnt[k]}건`).join(' · ');
-  return `<div class="dlg-block"><div class="dlg-label">사유 <span class="dlg-counter">${pre ? '신고 사유에 맞춰 골라 뒀어요. 확인 후 바꿀 수 있어요' : '고르면 안내 문구가 채워져요'}</span></div>
+  const keys = REASON_KEYS[DLG_KIND === 'comment' ? 'comment' : 'post'];
+  return `<div class="dlg-block"><div class="dlg-label">사유 <span class="dlg-counter">${pre ? '신고 사유로 골라 뒀어요. 확인 후 바꿀 수 있어요' : '고르면 안내 문구가 채워져요'}</span></div>
     ${summary ? `<div class="dlg-sub" style="margin:0 0 6px">신고 사유: ${esc(summary)}</div>` : ''}
     <select class="input" id="reason" style="width:100%" onchange="applyReason()">
       <option value="" ${pre ? '' : 'selected'} disabled>사유를 골라 주세요</option>
-      ${REASONS.map(r => `<option value="${r.key}" ${r.key === pre ? 'selected' : ''}>${r.label} (${r.desc})</option>`).join('')}</select></div>`;
+      ${keys.map(k => `<option value="${k}" ${k === pre ? 'selected' : ''}>${REASON[k]}</option>`).join('')}</select></div>`;
 }
 function applyReason() { $('guide').value = guideFor($('reason').value); dlgSync(); }
 const REPORTER_TPL = { post: '신고해 주신 게시물을 확인하고 삭제했어요. 알려 줘서 고마워요! 모두가 즐겁게 창작할 수 있는 아하오호가 되도록 더 노력할게요.', comment: '신고해 주신 댓글을 확인하고 삭제했어요. 알려 줘서 고마워요! 모두가 즐겁게 창작할 수 있는 아하오호가 되도록 더 노력할게요.', hide: '신고해 주신 게시물을 확인하고 다른 친구들에게 보이지 않게 했어요. 알려 줘서 고마워요! 모두가 즐겁게 창작할 수 있는 아하오호가 되도록 더 노력할게요.' };
@@ -1097,7 +1093,7 @@ const MEMO = {
       '게시물 신고는 <code>ao-gallery-server</code> <code>reports</code> 컬렉션에 저장됨. 신고자 한 명당 문서 하나에 {게시물 id, 사유, 상세}를 쌓는 구조',
       '게시물 신고에는 <b>접수 시각·처리 상태 필드가 없음</b>. 같은 게시물을 다시 신고하면 앞 신고를 덮어씀',
       '댓글 신고는 <code>ao-community-server</code> <code>ReplyReport</code>에 저장됨. 접수 시각과 상태(pending·reviewed·resolved·dismissed)가 이미 있음',
-      '서버 신고 사유 값이 앱 화면 4종과 다름. 게시물: offensive·inappropriate·privacy·copyright·other / 댓글: spam·harassment·inappropriate·hate_speech·other',
+      '서버 신고 사유 값이 앱 화면(댓글 4종·게시물 5종)과 다름. 게시물: offensive·inappropriate·privacy·copyright·other / 댓글: spam·harassment·inappropriate·hate_speech·other',
       '어드민(<code>ahhaohho-admin-v2</code>)에는 신고를 조회하는 화면·API가 없음',
       '슬랙 웹훅(<code>SLACK_WEBHOOK_URL</code>)은 gallery-server에 이미 있으나 다른 알림용이고 신고와는 연결 안 됨',
       '차단은 community-server에 사용자 차단 API가 있음. 어드민에서 볼 수 있는 화면·API는 없음',
@@ -1114,7 +1110,7 @@ const MEMO = {
     ],
     dev: [
       '게시물 신고에 접수 시각·처리 상태(대기/삭제/기각) 필드 추가, 재신고 시 덮어쓰지 않고 쌓기',
-      '앱 신고 사유 4종과 서버 사유 값 맞추기(게시물·댓글 공통)',
+      '앱 신고 사유(댓글 4종·게시물 5종)와 서버 사유 값 맞추기',
       '어드민 신고 목록 API(게시물+댓글, 대상 단위 묶음), 기각 처리 API',
       '신고 1건 발생 시 슬랙 알림(기존 웹훅 재사용 가능 여부)',
       '어드민 차단 목록 API',
@@ -1184,8 +1180,8 @@ const MEMO = {
       '클래스 이름 검색 API(지금은 글이 있는 클래스 전체를 한 번에 내려 드롭다운에 넣는 구조)',
       '게시물 목록 API에 작성자 닉네임 검색 조건 추가(닉네임은 membership에서 조회하므로 닉네임 → userId 변환 필요)',
       '자율 창작 피처드 지정이 지금 개발 범위 밖(기존 기획 문서 기준)이라 포함 여부 확인',
-      '숨김·삭제 안내는 제목·안내 두 칸. 사유(욕설이나 비방 / 무섭거나 위험한 내용 / 다른 창작자의 작품을 내 것처럼 / 개인정보 요구·공유 / 다른 이유)를 고르면 안내 기본 문구가 채워지고 고칠 수 있음. 어드민 API에 안내 칸 추가 필요',
-      '사유는 신고 사유에 맞춰 미리 골라 둠(모욕적이거나 악의적인 내용 → 욕설이나 비방, 지나치게 폭력적이거나 위험함 → 무섭거나 위험한 내용, 개인정보 노출 및 요구 → 개인정보 요구·공유, 기타 → 다른 이유). 신고자마다 다르면 가장 많은 사유 기준(같으면 먼저 들어온 신고). 신고 없는 건은 기본값 없이 시작, 사유를 골라야 처리 가능',
+      '숨김·삭제 안내는 제목·안내 두 칸. 사유를 고르면 안내 기본 문구가 채워지고 고칠 수 있음. 어드민 API에 안내 칸 추가 필요',
+      '운영자 사유는 앱 신고 사유와 같은 목록(댓글: 친구를 겁주거나 괴롭히는 내용 / 욕설, 놀리는 말 등을 사용 / 개인 정보(주소, 연락처 등) 공유 / 다른 이유가 있어요, 게시물은 출처 언급 없이 똑같이 따라 함 추가). 신고된 건은 신고 사유를 그대로 골라 둠. 신고자마다 다르면 가장 많은 사유 → 같으면 다른 이유가 있어요보다 구체적인 사유 → 그래도 같으면 먼저 들어온 신고. 신고 없는 건은 기본값 없이 시작, 사유를 골라야 처리 가능',
       '숨김·삭제가 앱에 제대로 반영되지 않는 문제 수정(사용자 문의 예정)',
       '용량 큰 원본 영상의 로딩 방식(스트리밍·미리 불러오기)',
     ],
