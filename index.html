@@ -830,6 +830,7 @@ function renderPM() {
     const st = postStatus(p);
     foot = gone ? closeOnly(goneBadge) : st !== 'pending' ? closeOnly(`<span class="badge b-${st}">${STATUS_LABEL[st]}</span>`) : `${sanction}
       <button class="btn" onclick="openDismiss('post','${p.id}')">신고 기각</button>
+      <button class="btn" onclick="openHide('${p.id}')">게시물 숨김</button>
       <button class="btn danger" onclick="openDelete('post','${p.id}')">게시물 삭제</button>`;
   } else if (ctx === 'block') {
     ctxLabel = '신고·차단 관리에서 연 상태 · 차단 경로';
@@ -1013,10 +1014,11 @@ function openDelete(kind, postId, commentId) {
   const summary = kind === 'post'
     ? `<div class="summary-box">${mediaThumb(p.media[0])}<div class="target-text"><div class="target-title" style="max-width:360px">${esc(p.author.nick)} · ${p.challenge ? esc(p.challenge) : '자율 게시'}</div><div class="target-sub" style="max-width:360px">${esc(p.text)}</div></div></div>`
     : `<div class="summary-box"><div class="target-text"><div class="target-title">${esc(c.author)}의 ${c === findComment(p, commentId) && p.comments.some(x => x.id === c.id) ? '댓글' : '답글'}</div><div class="quote" style="margin-top:6px;max-width:none">${esc(c.text)}</div></div></div>`;
-  const label = kind === 'post' ? '게시물' : '댓글';
+  const isReply = kind === 'comment' && !p.comments.some(x => x.id === commentId);
+  const label = kind === 'post' ? '게시물' : isReply ? '답글' : '댓글';
   $('dlg').innerHTML = `
     <div class="dlg-title">${label} 삭제</div>
-    <div class="dlg-sub">삭제하면 복구할 수 없어요.${kind === 'post' ? ' 피처드 게시물이면 피처드도 함께 해제돼요.' : ''}</div>
+    <div class="dlg-sub">삭제하면 복구할 수 없어요.${kind === 'post' ? ' 피처드 게시물이면 피처드도 함께 해제돼요.' : ''}${!isReply && c && (c.replies || []).filter(r => r.status !== 'deleted').length ? ` 달린 답글 ${(c.replies || []).filter(r => r.status !== 'deleted').length}개도 함께 삭제돼요(답글 작성자에게는 안내를 보내지 않아요).` : ''}</div>
     ${summary}
     ${reasonSelect(reports)}
     <div class="dlg-block">
@@ -1036,7 +1038,7 @@ function openDelete(kind, postId, commentId) {
           <div class="app-modal"><div class="app-modal-title" id="pvMsg"></div><div class="app-modal-body" id="pvGuide"></div>
           <div class="app-modal-btns"><span class="pri">그라운드룰 보러 가기</span></div></div></div>
         <div class="phone" id="pvReporter" style="${reports.length ? '' : 'opacity:.35'}"><div class="phone-cap">신고자 · 인앱 알림</div>
-          <div class="app-noti">🔔 ${reports.length ? '아하오호에서 메시지가 왔어요.' : '신고자가 없어 보내지 않아요'}</div>${reports.length ? `<div class="phone-cap" style="margin-top:6px">누르면 처리 결과 모달: ${kind === 'comment' ? `신고해 주신 댓글을 확인하고 삭제했어요. 신고한 댓글: "${esc(c.text.length > 5 ? c.text.slice(0, 5) + '...' : c.text)}" 알려 줘서 고마워요! 모두가 즐겁게 창작할 수 있는 아하오호가 되도록 더 노력할게요.` : REPORTER_TPL[kind]}</div>` : ''}</div>
+          <div class="app-noti">🔔 ${reports.length ? '아하오호에서 메시지가 왔어요.' : '신고자가 없어 보내지 않아요'}</div>${reports.length ? `<div class="phone-cap" style="margin-top:6px">누르면 처리 결과 모달: ${kind === 'comment' ? `신고해 주신 ${label}을 확인하고 삭제했어요. 신고한 ${label}: "${esc(c.text.length > 5 ? c.text.slice(0, 5) + '...' : c.text)}" 알려 줘서 고마워요! 모두가 즐겁게 창작할 수 있는 아하오호가 되도록 더 노력할게요.` : REPORTER_TPL[kind]}</div>` : ''}</div>
       </div>
     </div>
     <div class="dlg-foot"><button class="btn" onclick="closeDlg()">취소</button><button class="btn danger" id="okBtn" onclick="confirmDelete('${kind}','${postId}','${commentId || ''}')">삭제하기</button></div>`;
@@ -1059,9 +1061,10 @@ function confirmDelete(kind, postId, commentId) {
   const p = post(postId);
   const toAuthor = $('optAuthor').checked; const r = $('optReporter'); const toReporters = r && r.checked;
   if (kind === 'post') { p.status = 'deleted'; p.featured = false; p.deletedAt = '2026-11-12 10:40'; p.deletedNote = toAuthor ? '작성자 안내 보냄' : ''; }
-  else { const c = findComment(p, commentId); c.status = 'deleted'; }
+  else { const c = findComment(p, commentId); c.status = 'deleted'; (c.replies || []).forEach(r => { r.status = 'deleted'; }); }
   closeDlg();
-  const parts = [kind === 'post' ? '게시물을 삭제했어요' : '댓글을 삭제했어요'];
+  const isRoot = kind === 'comment' && p.comments.some(x => x.id === commentId);
+  const parts = [kind === 'post' ? '게시물을 삭제했어요' : isRoot ? `댓글을 삭제했어요${(findComment(p, commentId).replies || []).length ? ' (달린 답글도 함께 삭제)' : ''}` : '답글을 삭제했어요'];
   if (toAuthor) parts.push('작성자 안내'); if (toReporters) parts.push('신고자 알림');
   toast(parts.length > 1 ? `${parts[0]} · ${parts.slice(1).join('·')} 보냄` : parts[0]);
   if (S.pm) renderPM();
@@ -1134,6 +1137,7 @@ const MEMO = {
       '검색하면 검색어가 들어간 댓글이 있는 대화 묶음을 보여 주고, 맞은 줄에 표시',
       '"한 줄씩 보기"로 바꾸면 댓글·답글을 쓴 시각 기준 최신순으로 한 줄씩',
       '오호 AI 댓글과 삭제된 게시물의 댓글은 목록에서 뺌',
+      '원댓글을 삭제하면 달린 답글도 함께 삭제. 답글 작성자에게는 안내를 보내지 않음',
       '행을 누르면 같은 게시물 모달이 댓글 탭으로 열리고 그 댓글이 강조됨',
       '삭제는 목록에서 바로 또는 모달에서. 삭제 다이얼로그는 게시물 삭제와 같은 컴포넌트',
     ],
@@ -1164,6 +1168,7 @@ const MEMO = {
       '<b>작성자 닉네임 검색</b> 추가. 검색하면 챌린지·자율게시 탭에 그 작성자 게시물 수가 같이 보임. 카드의 닉네임을 누르면 그 작성자 게시물만 보기',
       '피처드 지정 시 <b>챌린지 피처드 / 자율 창작 피처드</b> 중 고르게 함. 자율 게시는 챌린지 피처드 선택 불가',
       '숨김도 삭제와 같은 다이얼로그: 사유 + 작성자 안내(기본 체크·기본 문구) + 신고자 알림 + 앱 미리보기. 회원 입장에서는 숨김과 삭제가 같으므로',
+      '신고가 들어온 게시물을 여기서 숨기거나 삭제해도 <b>신고 처리로 봄</b>. 작성자 안내에는 신고 여부가 드러나지 않아 어느 메뉴에서 처리해도 같음',
       '작성자 앱 모달은 "그라운드룰 보러 가기" 버튼 하나',
       '<b>필터를 3줄로 정리</b> — 작성자(닉네임 검색) / 올라간 곳(클래스 검색 › 큐레이션) / 보기(체크 항목 모음: 서포터즈 게시물만 보기 · 클래스 게시물 제외 · 피처드만 보기). 아래 줄에 결과 수·적용 중인 필터 수·모두 지우기',
       '일반 클래스가 아주 많으므로 클래스는 드롭다운 대신 <b>이름 검색(자동완성)</b>으로 고름. 고르면 칩으로 바뀌고 ✕로 해제. "클래스 게시물 제외"를 켜면 검색 목록에 시스템 클래스만 남음',
@@ -1202,7 +1207,7 @@ const SLACK_EXAMPLE = `
       <div class="slack-icon">#</div>
       <div style="flex:1;min-width:0">
         <div class="slack-title">아하오호 신고 알림 <small>#ahhaohho-report</small></div>
-        <div class="slack-msg"><b>[댓글 신고]</b> · 모욕적이거나 악의적인 내용<br>
+        <div class="slack-msg"><b>[댓글 신고]</b> · 욕설, 놀리는 말 등을 사용<br>
           작성자 <b>번개맨123</b> · "이거 진짜 별로다 ㅋㅋ 누가 이런 걸 올려"<br>
           이 댓글 누적 신고 2건 · <a href="javascript:void(0)" onclick="openFromRow('comment','g1','c2')">어드민에서 보기 →</a></div>
       </div>
@@ -1211,7 +1216,7 @@ const SLACK_EXAMPLE = `
       <div class="slack-icon">#</div>
       <div style="flex:1;min-width:0">
         <div class="slack-title">아하오호 신고 알림 <small>#ahhaohho-report</small></div>
-        <div class="slack-msg"><b>[게시물 신고]</b> · 기타 "다른 친구 영상을 그대로 올린 것 같아요"<br>
+        <div class="slack-msg"><b>[게시물 신고]</b> · 출처 언급 없이 똑같이 따라 함 "다른 친구 영상을 그대로 올린 것 같아요"<br>
           작성자 <b>별똥별탐험가</b> · 빙글빙글 조이트로프<br>
           이 게시물 누적 신고 1건 · <a href="javascript:void(0)" onclick="openFromRow('post','g1')">어드민에서 보기 →</a></div>
       </div>
